@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import CommandPalette from "./components/CommandPalette";
 import ModuleStub from "./modules/ModuleStub";
+import TasksModule from "./modules/TasksModule";
 import { moduleRegistry } from "./moduleRegistry";
 
 export default function App() {
@@ -34,7 +35,7 @@ export default function App() {
       <main className="workspace">
         <Topbar dark={dark} onToggleTheme={() => setDark((v) => !v)} onOpenPalette={() => setPaletteOpen(true)} />
         <div className="content">
-          <ModuleStub module={active} />
+          {active.id === "tasks" ? <TasksModule /> : <ModuleStub module={active} />}
         </div>
       </main>
       {paletteOpen && (

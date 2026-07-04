@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { visibleModules } from "../moduleRegistry";
+import { moduleIcon } from "../moduleIcons";
 
 interface Props {
   onSelect: (id: string) => void;
@@ -29,12 +30,17 @@ export default function CommandPalette({ onSelect, onClose }: Props) {
           }}
         />
         <div className="palette-list">
-          {items.map((m) => (
-            <button key={m.id} className="palette-item" onClick={() => onSelect(m.id)}>
-              {m.label}
-              <span className="palette-group">{m.group}</span>
-            </button>
-          ))}
+          {items.map((m) => {
+            const Icon = moduleIcon(m.id);
+            return (
+              <button key={m.id} className="palette-item" onClick={() => onSelect(m.id)}>
+                <span className="palette-label">
+                  <Icon size={15} strokeWidth={1.9} />
+                  {m.label}
+                </span>
+              </button>
+            );
+          })}
           {items.length === 0 && <div className="palette-empty">Ничего не найдено</div>}
         </div>
       </div>

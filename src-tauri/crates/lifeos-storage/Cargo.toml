@@ -6,3 +6,4 @@ description = "LifeOss storage: SQLite connection and migrations"
 
 [dependencies]
 rusqlite = { version = "0.31", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
