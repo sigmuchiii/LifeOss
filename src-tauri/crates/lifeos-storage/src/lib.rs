@@ -404,14 +404,16 @@ impl Storage {
         let mut stmt = self.conn.prepare(
             "SELECT id, title, days FROM habits WHERE archived_at IS NULL ORDER BY id",
         )?;
-        stmt.query_map([], |r| {
-            Ok(Habit {
-                id: r.get(0)?,
-                title: r.get(1)?,
-                days: r.get(2)?,
-            })
-        })?
-        .collect()
+        let habits = stmt
+            .query_map([], |r| {
+                Ok(Habit {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    days: r.get(2)?,
+                })
+            })?
+            .collect();
+        habits
     }
 
     pub fn habits_add(&self, title: &str, days: &str) -> Result<i64, rusqlite::Error> {
@@ -437,14 +439,16 @@ impl Storage {
         let mut stmt = self.conn.prepare(
             "SELECT habit_id, date, status FROM habit_marks WHERE date >= ?1 AND date <= ?2",
         )?;
-        stmt.query_map([from, to], |r| {
-            Ok(HabitMark {
-                habit_id: r.get(0)?,
-                date: r.get(1)?,
-                status: r.get(2)?,
-            })
-        })?
-        .collect()
+        let marks = stmt
+            .query_map([from, to], |r| {
+                Ok(HabitMark {
+                    habit_id: r.get(0)?,
+                    date: r.get(1)?,
+                    status: r.get(2)?,
+                })
+            })?
+            .collect();
+        marks
     }
 
     pub fn habit_mark_set(
@@ -475,16 +479,18 @@ impl Storage {
             "SELECT id, content, pinned, created_at, updated_at FROM quick_notes
              ORDER BY pinned DESC, id DESC",
         )?;
-        stmt.query_map([], |r| {
-            Ok(QuickNote {
-                id: r.get(0)?,
-                content: r.get(1)?,
-                pinned: r.get::<_, i64>(2)? != 0,
-                created_at: r.get(3)?,
-                updated_at: r.get(4)?,
-            })
-        })?
-        .collect()
+        let notes = stmt
+            .query_map([], |r| {
+                Ok(QuickNote {
+                    id: r.get(0)?,
+                    content: r.get(1)?,
+                    pinned: r.get::<_, i64>(2)? != 0,
+                    created_at: r.get(3)?,
+                    updated_at: r.get(4)?,
+                })
+            })?
+            .collect();
+        notes
     }
 
     pub fn qnotes_add(&self, content: &str) -> Result<i64, rusqlite::Error> {
@@ -528,14 +534,16 @@ impl Storage {
             "SELECT id, minutes, label, ended_at FROM focus_sessions
              WHERE date(ended_at) = date('now', 'localtime') ORDER BY id DESC",
         )?;
-        stmt.query_map([], |r| {
-            Ok(FocusSession {
-                id: r.get(0)?,
-                minutes: r.get(1)?,
-                label: r.get(2)?,
-                ended_at: r.get(3)?,
-            })
-        })?
-        .collect()
+        let sessions = stmt
+            .query_map([], |r| {
+                Ok(FocusSession {
+                    id: r.get(0)?,
+                    minutes: r.get(1)?,
+                    label: r.get(2)?,
+                    ended_at: r.get(3)?,
+                })
+            })?
+            .collect();
+        sessions
     }
 }
