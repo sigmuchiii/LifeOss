@@ -1,0 +1,112 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line2);
+  background: var(--card);
+  padding: 18px 12px;
+  gap: 14px;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.brand-badge {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.brand-name { font-weight: 800; }
+.brand-sub { font-size: 11px; color: var(--mut); }
+.nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.nav-group-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--faint); padding: 0 8px 4px;
+}
+.nav-item {
+  display: block; width: 100%; text-align: left; border: 0; background: none;
+  padding: 7px 10px; border-radius: 9px; color: var(--text);
+  font: inherit; cursor: pointer;
+}
+.nav-item:hover { background: var(--soft); }
+.nav-item.active { background: var(--acc); color: #fff; font-weight: 600; }
+.sidebar-footer { border-top: 1px solid var(--line); padding-top: 12px; }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.user-avatar {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--soft);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--mut);
+}
+.user-name { font-weight: 600; }
+
+/* Workspace */
+.workspace { overflow-y: auto; }
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  padding: 12px 30px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.search {
+  flex: 0 1 340px; text-align: left; border: 1px solid var(--line2);
+  background: var(--card); border-radius: 10px; padding: 7px 12px;
+  color: var(--faint); font: inherit; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.kbd {
+  font-size: 11px; border: 1px solid var(--line2); border-radius: 6px;
+  padding: 1px 6px; color: var(--mut); background: var(--soft);
+}
+.icon-btn {
+  border: 1px solid var(--line2); background: var(--card); border-radius: 10px;
+  padding: 6px 10px; cursor: pointer; font-size: 14px;
+}
+.content { padding: 30px; }
+
+.phead h1 { margin: 0 0 4px; font-weight: 800; font-size: 22px; }
+.phead-sub { color: var(--mut); margin-bottom: 18px; }
+
+.card {
+  background: var(--card); border-radius: var(--rad); box-shadow: var(--shadow);
+  padding: 18px;
+}
+.card code { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 1px 5px; border-radius: 5px; }
+.mut { color: var(--mut); }
+
+/* Command palette */
+.palette-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 18, 26, 0.4);
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 15vh; z-index: 100;
+}
+.palette {
+  width: 480px; background: var(--card); border-radius: var(--rad2);
+  box-shadow: var(--shadow2); overflow: hidden;
+}
+.palette input {
+  width: 100%; border: 0; border-bottom: 1px solid var(--line);
+  padding: 14px 16px; font: inherit; background: transparent; color: var(--text); outline: none;
+}
+.palette-list { max-height: 320px; overflow-y: auto; padding: 6px; }
+.palette-item {
+  display: flex; justify-content: space-between; width: 100%;
+  border: 0; background: none; font: inherit; color: var(--text);
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+}
+.palette-item:hover { background: var(--soft); }
+.palette-group { color: var(--faint); font-size: 12px; }
+.palette-empty { padding: 14px; color: var(--faint); text-align: center; }

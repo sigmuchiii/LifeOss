@@ -1,0 +1,8 @@
+[package]
+name = "lifeos-core"
+version = "0.1.0"
+edition = "2021"
+description = "LifeOss domain core: module registry and shared domain types"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

@@ -1,0 +1,8 @@
+[package]
+name = "lifeos-storage"
+version = "0.1.0"
+edition = "2021"
+description = "LifeOss storage: SQLite connection and migrations"
+
+[dependencies]
+rusqlite = { version = "0.31", features = ["bundled"] }

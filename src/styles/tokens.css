@@ -1,0 +1,37 @@
+/* Дизайн-токены LifeOss — источник: docs/design/bento-design.html (Bento v3) */
+:root {
+  --bg: #eef1f7;
+  --card: #ffffff;
+  --soft: #f3f5fa;
+  --text: #1f2430;
+  --mut: #6b7385;
+  --faint: #9aa2b4;
+  --line: #eceff5;
+  --line2: #e1e5ee;
+  --acc: #6c5ce7;
+  --acc2: #a29bfe;
+  --g: #00b894;
+  --r: #e74c6b;
+  --y: #f0932b;
+  --b: #0984e3;
+  --o: #e17055;
+  --rad: 18px;
+  --rad2: 14px;
+  --shadow: 0 1px 2px rgba(31, 36, 48, 0.04), 0 8px 24px rgba(31, 36, 48, 0.06);
+  --shadow2: 0 2px 4px rgba(31, 36, 48, 0.06), 0 16px 40px rgba(31, 36, 48, 0.1);
+  --font: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html.dark {
+  --bg: #13151c;
+  --card: #1c1f29;
+  --soft: #232734;
+  --text: #e8eaf1;
+  --mut: #9aa2b4;
+  --faint: #6b7385;
+  --line: #262a37;
+  --line2: #2e3342;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.45);
+}

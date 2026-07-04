@@ -1,0 +1,18 @@
+[workspace]
+members = ["crates/lifeos-core", "crates/lifeos-storage"]
+
+[package]
+name = "lifeoss"
+version = "0.1.0"
+edition = "2021"
+description = "LifeOss — personal local-first life OS"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+lifeos-core = { path = "crates/lifeos-core" }
+lifeos-storage = { path = "crates/lifeos-storage" }

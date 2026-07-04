@@ -1579,3 +1579,10 @@ Four functional bugs found in `lifeos-core` were fixed (no security scope). Cove
 4. **Визуальный источник истины — Bento v3 дизайн** (`docs/design/bento-design.html`): сайдбар 248px с группами навигации (Обзор / Жизнь / Работа / Система), light-first + тёмная тема через `html.dark`, акцент #6c5ce7, Inter + JetBrains Mono, радиус карточек 18px, ⌘K командная палитра. Отменяет прежнюю геометрию «rail 40px + sidebar 214px» из lifeos-v4-design.md.
 5. **Открытые вопросы** (`open-questions.md`) остаются отложенными — не блокируют старт разработки.
 6. **Структура документации:** ядро в `docs/`, модульные спеки в `docs/modules/`, историческое в `docs/archive/` (не источник истины), дизайн в `docs/design/`.
+
+## 2026-07-04 — Milestone 0: каркас приложения
+
+1. **Каркас закоммичен**: Tauri 2 + React 19 + TypeScript + Vite; Rust workspace в `src-tauri/` с крейтами `lifeos-core` (реестр модулей) и `lifeos-storage` (SQLite/WAL + миграции, `0001_init`).
+2. **Реестр модулей** (`src/moduleRegistry.ts` + зеркало в `lifeos-core`): 14 видимых модулей, camelCase id, группы навигации Обзор / Жизнь / Работа / Система (по Bento-макету); `reminders` и `psychologicalHealth` — hidden.
+3. **UI-каркас по Bento**: сайдбар 248px, sticky-топбар с поиском, светлая тема по умолчанию + тёмная (`html.dark`), токены из `docs/design/bento-design.html`, командная палитра Ctrl/Cmd+K (только навигация).
+4. **Bundle выключен** (`bundle.active: false`) до этапа релиза; цель — `npm run tauri dev` локально у владельца. Инструкция: `docs/dev-setup.md`.
