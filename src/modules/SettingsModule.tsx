@@ -27,25 +27,19 @@ export default function SettingsModule({ theme, onSetTheme }: {
 
       <section className="card set-card">
         <h2>Тема оформления</h2>
-        <p className="mut">Тема сохраняется и применяется при следующем запуске.</p>
-        <div className="theme-grid">
+        <p className="mut">Минималистичный выбор: точка показывает фон и акцент темы.</p>
+        <div className="thdots">
           {THEMES.map((t) => (
             <button
               key={t.id}
-              className={"theme-card" + (t.id === theme ? " on" : "")}
+              className={"thdot" + (t.id === theme ? " on" : "")}
               onClick={() => onSetTheme(t.id)}
+              title={t.label}
             >
-              <span className="theme-prev" style={{ background: t.preview[0] }}>
-                <span className="theme-prev-card" style={{ background: t.preview[1] }}>
-                  <span className="theme-prev-acc" style={{ background: t.preview[2] }} />
-                  <span className="theme-prev-line" style={{ background: t.preview[3], opacity: 0.55 }} />
-                  <span className="theme-prev-line short" style={{ background: t.preview[3], opacity: 0.3 }} />
-                </span>
+              <span className="thdot-c" style={{ background: t.bg }}>
+                {t.id === theme ? <Check size={15} strokeWidth={3.5} color={t.acc} /> : <span style={{ background: t.acc }} />}
               </span>
-              <span className="theme-name">
-                {t.label}
-                {t.id === theme && <Check size={14} strokeWidth={3} />}
-              </span>
+              <span className="thdot-lbl">{t.label}</span>
             </button>
           ))}
         </div>

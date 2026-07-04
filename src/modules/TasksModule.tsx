@@ -5,6 +5,7 @@ import {
   Sun, Inbox, CalendarDays, CheckCircle2,
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
+import { useCtxMenu } from "../components/ContextMenu";
 import { todayISO, addDays, fmtDate } from "../lib/dates";
 
 // ---------- Типы (зеркалят Rust-структуры) ----------
@@ -372,8 +373,20 @@ function TaskRow({ task, inTrash, overdueGroup, selected, onSelect, onToggle, on
   onToggle: () => void;
   onRestore: () => void;
 }) {
+  const ctx = useCtxMenu();
   return (
-    <div className={"trow" + (task.done ? " done" : "") + (selected ? " sel" : "")} onClick={inTrash ? undefined : onSelect}>
+    <div
+      className={"trow" + (task.done ? " done" : "") + (selected ? " sel" : "")}
+      onClick={inTrash ? undefined : onSelect}
+      onContextMenu={(e) =>
+        ctx.open(e, inTrash
+          ? [{ label: "♻️ Восстановить", onClick: onRestore }]
+          : [
+              { label: task.done ? "↩️ Вернуть в работу" : "✅ Выполнить", onClick: onToggle },
+              { label: "📝 Открыть", onClick: onSelect },
+            ])
+      }
+    >
       <button
         className={"tcheck p" + task.priority + (task.done ? " checked" : "")}
         title={PRIORITY_LABEL[task.priority]}

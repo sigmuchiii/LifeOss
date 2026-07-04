@@ -81,3 +81,47 @@ html[data-theme="sunset"] {
   --acc: #e17055;
   --acc2: #f0a58f;
 }
+
+/* Графит — тёмная нейтральная, приглушённый стальной акцент */
+html[data-theme="graphite"] {
+  --bg: #17181c;
+  --card: #202127;
+  --soft: #282a31;
+  --text: #e6e8ec;
+  --mut: #9aa1ac;
+  --faint: #6d7480;
+  --line: #2a2c34;
+  --line2: #34363f;
+  --acc: #7f8ea3;
+  --acc2: #a5b2c4;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Океан — светлая, синий акцент */
+html[data-theme="ocean"] {
+  --bg: #eaf3fa;
+  --card: #ffffff;
+  --soft: #f0f7fc;
+  --text: #16283a;
+  --mut: #5c7591;
+  --faint: #8fa6bd;
+  --line: #e3edf6;
+  --line2: #d3e3f1;
+  --acc: #0984e3;
+  --acc2: #66b3f0;
+}
+
+/* Роза — светлая, розовый акцент */
+html[data-theme="rose"] {
+  --bg: #faeef3;
+  --card: #ffffff;
+  --soft: #fbf3f7;
+  --text: #33202a;
+  --mut: #8f6c7d;
+  --faint: #bb9aab;
+  --line: #f4e4ec;
+  --line2: #ecd4e0;
+  --acc: #e84393;
+  --acc2: #f095c0;
+}

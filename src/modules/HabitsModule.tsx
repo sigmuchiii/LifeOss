@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Plus, Check, Minus, X, Flame } from "lucide-react";
-import { todayISO, addDays, dowMon, WEEKDAYS_SHORT, MONTHS } from "../lib/dates";
+import { Plus, Check, Minus, Flame } from "lucide-react";
+import { todayISO, addDays, dowMon, WEEKDAYS_SHORT } from "../lib/dates";
+import { useCtxMenu } from "../components/ContextMenu";
 
-interface Habit { id: number; title: string; days: string }
+interface Habit { id: number; title: string; days: string; timeOfDay: string | null }
 interface HabitMark { habitId: number; date: string; status: string }
 
 const DAYS_ALL = "1111111";
@@ -13,8 +14,10 @@ export default function HabitsModule() {
   const [marks, setMarks] = useState<HabitMark[]>([]);
   const [title, setTitle] = useState("");
   const [days, setDays] = useState(DAYS_ALL);
+  const [time, setTime] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ctx = useCtxMenu();
 
   const t = todayISO();
   const from = addDays(t, -13); // две недели
@@ -57,16 +60,15 @@ export default function HabitsModule() {
   const add = async () => {
     const v = title.trim();
     if (!v) return;
-    await call("habits_add", { title: v, days });
+    await call("habits_add", { title: v, days, timeOfDay: time || null });
     setTitle("");
     setDays(DAYS_ALL);
+    setTime("");
     setAdding(false);
   };
 
-  const fmtCol = (d: string) => {
-    const dd = new Date(d + "T00:00:00");
-    return { top: WEEKDAYS_SHORT[dowMon(dd)], num: `${dd.getDate()}`, month: MONTHS[dd.getMonth()] };
-  };
+  const preset = (p: string) => setDays(p);
+  const presetCls = (p: string) => "hp-btn" + (days === p ? " on" : "");
 
   return (
     <div className="habits">
@@ -79,27 +81,47 @@ export default function HabitsModule() {
       {!adding ? (
         <button className="hadd-open" onClick={() => setAdding(true)}><Plus size={15} /> Новая привычка</button>
       ) : (
-        <div className="card hadd">
-          <input
-            autoFocus
-            value={title}
-            placeholder="Название привычки…"
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") add(); if (e.key === "Escape") setAdding(false); }}
-          />
-          <div className="hadd-days">
-            {WEEKDAYS_SHORT.map((w, i) => (
-              <button
-                key={w}
-                className={"hday" + (days[i] === "1" ? " on" : "")}
-                onClick={() => setDays(days.slice(0, i) + (days[i] === "1" ? "0" : "1") + days.slice(i + 1))}
-              >
-                {w}
-              </button>
-            ))}
+        <div className="card hadd2">
+          <div className="hadd2-row">
+            <span className="hadd2-emoji">🔁</span>
+            <input
+              className="field"
+              autoFocus
+              value={title}
+              placeholder="Например: Чтение 30 минут"
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") add(); if (e.key === "Escape") setAdding(false); }}
+            />
           </div>
+
+          <div className="hadd2-cols">
+            <div>
+              <div className="hadd2-lbl">Дни недели</div>
+              <div className="hadd2-presets">
+                <button className={presetCls("1111111")} onClick={() => preset("1111111")}>Каждый день</button>
+                <button className={presetCls("1111100")} onClick={() => preset("1111100")}>Будни</button>
+                <button className={presetCls("0000011")} onClick={() => preset("0000011")}>Выходные</button>
+              </div>
+              <div className="hadd-days">
+                {WEEKDAYS_SHORT.map((w, i) => (
+                  <button
+                    key={w}
+                    className={"hday" + (days[i] === "1" ? " on" : "")}
+                    onClick={() => setDays(days.slice(0, i) + (days[i] === "1" ? "0" : "1") + days.slice(i + 1))}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="hadd2-lbl">Время <span className="mut">(появится на таймлайне «Сегодня»)</span></div>
+              <input type="time" className="field hadd2-time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
+          </div>
+
           <div className="hadd-actions">
-            <button className="btn-acc" onClick={add}>Добавить</button>
+            <button className="btn-acc" disabled={!title.trim()} onClick={add}>Добавить привычку</button>
             <button className="btn-quiet" onClick={() => setAdding(false)}>Отмена</button>
           </div>
         </div>
@@ -114,22 +136,29 @@ export default function HabitsModule() {
               <tr>
                 <th className="hg-name" />
                 {dates.map((d) => {
-                  const c = fmtCol(d);
+                  const dd = new Date(d + "T00:00:00");
                   return (
                     <th key={d} className={d === t ? "hg-today" : ""}>
-                      <span className="hg-dow">{c.top}</span>
-                      <span className="hg-num">{c.num}</span>
+                      <span className="hg-dow">{WEEKDAYS_SHORT[dowMon(dd)]}</span>
+                      <span className="hg-num">{dd.getDate()}</span>
                     </th>
                   );
                 })}
                 <th className="hg-streak" title="Серия"><Flame size={14} /></th>
-                <th />
               </tr>
             </thead>
             <tbody>
               {habits.map((h) => (
                 <tr key={h.id}>
-                  <td className="hg-name">{h.title}</td>
+                  <td
+                    className="hg-name"
+                    onContextMenu={(e) => ctx.open(e, [
+                      { label: "🗑 Удалить привычку", danger: true, onClick: () => call("habits_delete", { id: h.id }) },
+                    ])}
+                  >
+                    {h.title}
+                    {h.timeOfDay && <span className="hg-time">🕓 {h.timeOfDay.slice(0, 5)}</span>}
+                  </td>
                   {dates.map((d) => {
                     const dow = dowMon(new Date(d + "T00:00:00"));
                     const scheduled = h.days[dow] === "1";
@@ -150,15 +179,11 @@ export default function HabitsModule() {
                     );
                   })}
                   <td className="hg-streak">{streak(h)}</td>
-                  <td>
-                    <button className="hdel" title="Удалить привычку" onClick={() => call("habits_delete", { id: h.id })}>
-                      <X size={14} />
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="mut hgrid-hint">ПКМ по названию привычки — удаление</p>
         </div>
       )}
     </div>

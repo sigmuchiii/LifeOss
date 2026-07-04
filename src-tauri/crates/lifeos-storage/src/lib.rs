@@ -80,6 +80,30 @@ const MIGRATIONS: &[(&str, &str)] = &[
             ended_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );",
     ),
+    (
+        "0005_today_projects_diary",
+        "ALTER TABLE habits ADD COLUMN time_of_day TEXT;
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            stage TEXT NOT NULL DEFAULT '',
+            blockers TEXT NOT NULL DEFAULT '',
+            next_actions TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            archived_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS diary_entries (
+            date TEXT PRIMARY KEY,
+            rating INTEGER,
+            mood TEXT NOT NULL DEFAULT '',
+            energy TEXT NOT NULL DEFAULT '',
+            entry TEXT NOT NULL DEFAULT '',
+            done_items TEXT NOT NULL DEFAULT '[]',
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );",
+    ),
 ];
 
 #[derive(serde::Serialize)]
@@ -132,6 +156,7 @@ pub struct Habit {
     pub id: i64,
     pub title: String,
     pub days: String,
+    pub time_of_day: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -159,6 +184,29 @@ pub struct FocusSession {
     pub minutes: i64,
     pub label: Option<String>,
     pub ended_at: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Project {
+    pub id: i64,
+    pub title: String,
+    pub description: String,
+    pub stage: String,
+    pub blockers: String,
+    pub next_actions: String,
+    pub notes: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiaryEntry {
+    pub date: String,
+    pub rating: Option<i64>,
+    pub mood: String,
+    pub energy: String,
+    pub entry: String,
+    pub done_items: String,
 }
 
 const TASK_COLS: &str =
@@ -402,7 +450,7 @@ impl Storage {
 
     pub fn habits_list(&self) -> Result<Vec<Habit>, rusqlite::Error> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, title, days FROM habits WHERE archived_at IS NULL ORDER BY id",
+            "SELECT id, title, days, time_of_day FROM habits WHERE archived_at IS NULL ORDER BY id",
         )?;
         let habits = stmt
             .query_map([], |r| {
@@ -410,16 +458,22 @@ impl Storage {
                     id: r.get(0)?,
                     title: r.get(1)?,
                     days: r.get(2)?,
+                    time_of_day: r.get(3)?,
                 })
             })?
             .collect();
         habits
     }
 
-    pub fn habits_add(&self, title: &str, days: &str) -> Result<i64, rusqlite::Error> {
+    pub fn habits_add(
+        &self,
+        title: &str,
+        days: &str,
+        time_of_day: Option<&str>,
+    ) -> Result<i64, rusqlite::Error> {
         self.conn.execute(
-            "INSERT INTO habits (title, days) VALUES (?1, ?2)",
-            [title, days],
+            "INSERT INTO habits (title, days, time_of_day) VALUES (?1, ?2, ?3)",
+            rusqlite::params![title, days, time_of_day],
         )?;
         Ok(self.conn.last_insert_rowid())
     }
@@ -545,5 +599,103 @@ impl Storage {
             })?
             .collect();
         sessions
+    }
+
+    // ---- Проекты ----
+
+    pub fn projects_list(&self) -> Result<Vec<Project>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, title, description, stage, blockers, next_actions, notes
+             FROM projects WHERE archived_at IS NULL ORDER BY id",
+        )?;
+        let projects = stmt
+            .query_map([], |r| {
+                Ok(Project {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    description: r.get(2)?,
+                    stage: r.get(3)?,
+                    blockers: r.get(4)?,
+                    next_actions: r.get(5)?,
+                    notes: r.get(6)?,
+                })
+            })?
+            .collect();
+        projects
+    }
+
+    pub fn projects_add(&self, title: &str) -> Result<i64, rusqlite::Error> {
+        self.conn
+            .execute("INSERT INTO projects (title) VALUES (?1)", [title])?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn projects_update(
+        &self,
+        id: i64,
+        title: &str,
+        description: &str,
+        stage: &str,
+        blockers: &str,
+        next_actions: &str,
+        notes: &str,
+    ) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "UPDATE projects SET title = ?2, description = ?3, stage = ?4, blockers = ?5,
+             next_actions = ?6, notes = ?7 WHERE id = ?1",
+            rusqlite::params![id, title, description, stage, blockers, next_actions, notes],
+        )?;
+        Ok(())
+    }
+
+    pub fn projects_archive(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "UPDATE projects SET archived_at = datetime('now') WHERE id = ?1",
+            [id],
+        )?;
+        Ok(())
+    }
+
+    // ---- Дневник ----
+
+    pub fn diary_month(&self, month: &str) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT date, rating, mood, energy, entry, done_items
+             FROM diary_entries WHERE date LIKE ?1 || '-%'",
+        )?;
+        let entries = stmt
+            .query_map([month], |r| {
+                Ok(DiaryEntry {
+                    date: r.get(0)?,
+                    rating: r.get(1)?,
+                    mood: r.get(2)?,
+                    energy: r.get(3)?,
+                    entry: r.get(4)?,
+                    done_items: r.get(5)?,
+                })
+            })?
+            .collect();
+        entries
+    }
+
+    pub fn diary_set(
+        &self,
+        date: &str,
+        rating: Option<i64>,
+        mood: &str,
+        energy: &str,
+        entry: &str,
+        done_items: &str,
+    ) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO diary_entries (date, rating, mood, energy, entry, done_items)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(date) DO UPDATE SET rating = excluded.rating, mood = excluded.mood,
+             energy = excluded.energy, entry = excluded.entry, done_items = excluded.done_items,
+             updated_at = datetime('now')",
+            rusqlite::params![date, rating, mood, energy, entry, done_items],
+        )?;
+        Ok(())
     }
 }

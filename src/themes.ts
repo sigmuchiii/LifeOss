@@ -1,19 +1,24 @@
 // Темы LifeOss. Выбор темы живёт в «Настройках» (решение владельца, 2026-07-04).
+// Выбор минималистичный: цветовые точки (фон + акцент), без больших превью.
 
 export interface ThemeDef {
   id: string;
   label: string;
   dark: boolean;
-  /** Свотчи для карточки-превью в настройках: фон, карточка, акцент, текст */
-  preview: [string, string, string, string];
+  /** Цвета для точки-свотча в настройках */
+  bg: string;
+  acc: string;
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: "light",    label: "Лаванда",  dark: false, preview: ["#eef1f7", "#ffffff", "#6c5ce7", "#1f2430"] },
-  { id: "dark",     label: "Тёмная",   dark: true,  preview: ["#13151c", "#1c1f29", "#6c5ce7", "#e8eaf1"] },
-  { id: "midnight", label: "Полночь",  dark: true,  preview: ["#0b1020", "#141b31", "#4ea3ff", "#e6ecf7"] },
-  { id: "forest",   label: "Лес",      dark: false, preview: ["#edf4ef", "#ffffff", "#0f9d70", "#1e2b25"] },
-  { id: "sunset",   label: "Закат",    dark: false, preview: ["#f7f0ea", "#ffffff", "#e17055", "#2e2620"] },
+  { id: "light",    label: "Лаванда", dark: false, bg: "#eef1f7", acc: "#6c5ce7" },
+  { id: "dark",     label: "Тёмная",  dark: true,  bg: "#13151c", acc: "#6c5ce7" },
+  { id: "midnight", label: "Полночь", dark: true,  bg: "#0b1020", acc: "#4ea3ff" },
+  { id: "graphite", label: "Графит",  dark: true,  bg: "#17181c", acc: "#7f8ea3" },
+  { id: "forest",   label: "Лес",     dark: false, bg: "#edf4ef", acc: "#0f9d70" },
+  { id: "ocean",    label: "Океан",   dark: false, bg: "#eaf3fa", acc: "#0984e3" },
+  { id: "sunset",   label: "Закат",   dark: false, bg: "#f7f0ea", acc: "#e17055" },
+  { id: "rose",     label: "Роза",    dark: false, bg: "#faeef3", acc: "#e84393" },
 ];
 
 export const DEFAULT_THEME = "light";

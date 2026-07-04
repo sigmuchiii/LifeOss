@@ -141,9 +141,14 @@ fn habits_list(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::Habi
 }
 
 #[tauri::command]
-fn habits_add(state: tauri::State<AppState>, title: String, days: String) -> Result<i64, String> {
+fn habits_add(
+    state: tauri::State<AppState>,
+    title: String,
+    days: String,
+    time_of_day: Option<String>,
+) -> Result<i64, String> {
     lock(&state)?
-        .habits_add(&title, &days)
+        .habits_add(&title, &days, time_of_day.as_deref())
         .map_err(|e| e.to_string())
 }
 
@@ -222,6 +227,73 @@ fn focus_today(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::Focu
     lock(&state)?.focus_today().map_err(|e| e.to_string())
 }
 
+// ---- Проекты ----
+
+#[tauri::command]
+fn projects_list(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::Project>, String> {
+    lock(&state)?.projects_list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn projects_add(state: tauri::State<AppState>, title: String) -> Result<i64, String> {
+    lock(&state)?.projects_add(&title).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+fn projects_update(
+    state: tauri::State<AppState>,
+    id: i64,
+    title: String,
+    description: String,
+    stage: String,
+    blockers: String,
+    next_actions: String,
+    notes: String,
+) -> Result<(), String> {
+    lock(&state)?
+        .projects_update(
+            id,
+            &title,
+            &description,
+            &stage,
+            &blockers,
+            &next_actions,
+            &notes,
+        )
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn projects_archive(state: tauri::State<AppState>, id: i64) -> Result<(), String> {
+    lock(&state)?.projects_archive(id).map_err(|e| e.to_string())
+}
+
+// ---- Дневник ----
+
+#[tauri::command]
+fn diary_month(
+    state: tauri::State<AppState>,
+    month: String,
+) -> Result<Vec<lifeos_storage::DiaryEntry>, String> {
+    lock(&state)?.diary_month(&month).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn diary_set(
+    state: tauri::State<AppState>,
+    date: String,
+    rating: Option<i64>,
+    mood: String,
+    energy: String,
+    entry: String,
+    done_items: String,
+) -> Result<(), String> {
+    lock(&state)?
+        .diary_set(&date, rating, &mood, &energy, &entry, &done_items)
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -259,7 +331,13 @@ fn main() {
             qnotes_update,
             qnotes_delete,
             focus_add,
-            focus_today
+            focus_today,
+            projects_list,
+            projects_add,
+            projects_update,
+            projects_archive,
+            diary_month,
+            diary_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running LifeOss");
