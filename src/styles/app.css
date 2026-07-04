@@ -507,3 +507,123 @@ th.hg-streak svg { color: var(--o); }
 .qn-btn:hover { color: var(--text); background: var(--soft); }
 .qn-btn.on { color: var(--acc); }
 .qn-btn.del:hover { color: var(--r); }
+
+
+/* ==================== Полировка (2026-07-04) ==================== */
+
+/* Топбар — тише и незаметнее */
+.topbar { background: transparent; backdrop-filter: none; border-bottom: 0; padding: 10px 30px 2px; }
+.search {
+  flex: 0 1 300px; border: 0;
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+  color: var(--faint); padding: 6px 12px;
+}
+.search:hover { background: var(--card); color: var(--mut); }
+.search .kbd { border: 0; background: color-mix(in srgb, var(--soft) 70%, transparent); }
+.topbar-date { font-size: 12.5px; color: var(--faint); }
+
+/* Кастомные тултипы сайдбара */
+.nav-item, .brand-badge { position: relative; }
+.nav-item::after, .brand-badge::after {
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 12px); top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--text); color: var(--bg);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  padding: 5px 11px; border-radius: 8px; box-shadow: var(--shadow2);
+  opacity: 0; pointer-events: none; z-index: 60;
+  transition: opacity 0.15s ease 0.3s, transform 0.15s ease 0.3s;
+}
+.nav-item:hover::after, .brand-badge:hover::after {
+  opacity: 1; transform: translateY(-50%) translateX(0);
+}
+
+/* Единые поля ввода: видимый контур + подсветка фокуса */
+.field {
+  border: 1px solid var(--line2); border-radius: 10px;
+  padding: 8px 11px; font: inherit; color: var(--text); outline: none;
+  background: color-mix(in srgb, var(--soft) 45%, var(--card));
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.field:hover { border-color: color-mix(in srgb, var(--acc) 35%, var(--line2)); }
+.field:focus, .field:focus-within {
+  border-color: var(--acc); background: var(--card);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 14%, transparent);
+}
+textarea.field { resize: vertical; }
+select.field {
+  appearance: none; cursor: pointer; padding-right: 30px; font-size: 13px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa2b4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+
+/* Правая панель задач: контуры полей */
+.ted-title.field { font-size: 16px; font-weight: 700; line-height: 1.35; }
+.ted-notes.field { min-height: 96px; }
+.ted-sub-add.field { display: flex; align-items: center; gap: 8px; color: var(--faint); }
+.ted-sub-add.field input { flex: 1; border: 0; outline: none; background: none; color: var(--text); font: inherit; }
+.ted-top { flex-wrap: wrap; }
+.ted-datebtn { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; padding: 6px 10px; }
+.ted-datebtn.empty { color: var(--faint); }
+.ted-status input.field { flex: 1; }
+
+/* Поповер выбора даты и времени */
+.pop-backdrop { position: fixed; inset: 0; z-index: 25; }
+.dp-anchor { position: relative; }
+.dp-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; }
+.dp-pop.right { left: auto; right: 0; top: calc(100% + 6px); }
+.dp {
+  width: 258px; background: var(--card); border: 1px solid var(--line2);
+  border-radius: 14px; box-shadow: var(--shadow2); padding: 10px;
+  animation: popIn 0.16s ease;
+}
+.dp-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.dp-quick button {
+  border: 1px solid var(--line); background: var(--soft); color: var(--text);
+  font: inherit; font-size: 12.5px; border-radius: 8px; padding: 5px 8px; cursor: pointer;
+}
+.dp-quick button:hover { border-color: var(--acc2); color: var(--acc); }
+.dp-quick .dp-clear { color: var(--mut); }
+.dp-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 700; font-size: 13.5px; padding: 2px 2px 6px;
+}
+.dp-nav { border: 0; background: none; color: var(--mut); cursor: pointer; padding: 4px; border-radius: 7px; display: flex; }
+.dp-nav:hover { background: var(--soft); color: var(--text); }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp-dow { text-align: center; font-size: 10.5px; color: var(--faint); text-transform: uppercase; padding: 2px 0; }
+.dp-day {
+  border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--text);
+  width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; padding: 0;
+}
+.dp-day:hover { background: var(--soft); }
+.dp-day.out { color: var(--faint); opacity: 0.55; }
+.dp-day.now { color: var(--acc); font-weight: 700; }
+.dp-day.sel { background: var(--acc); color: #fff; font-weight: 700; }
+.dp-time {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--line); color: var(--mut);
+}
+.dp-time input { flex: 1; padding: 5px 8px; font-size: 13px; min-width: 0; }
+.dp-timeclear { border: 0; background: none; color: var(--faint); cursor: pointer; display: flex; padding: 3px; border-radius: 5px; }
+.dp-timeclear:hover { color: var(--r); }
+.dp-done { padding: 5px 12px; font-size: 12.5px; border-radius: 8px; }
+
+/* Единый стиль полей в остальных модулях */
+.qnote-new textarea, .qnote textarea {
+  border: 1px solid var(--line2); border-radius: 10px; padding: 9px 11px;
+  background: color-mix(in srgb, var(--soft) 45%, var(--card));
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.qnote-new textarea:focus, .qnote textarea:focus {
+  border-color: var(--acc); background: var(--card);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 14%, transparent);
+}
+.qa:focus-within {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 14%, transparent);
+}
+.hadd input:focus, .tsb-newlist:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 14%, transparent);
+}
