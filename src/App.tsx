@@ -34,7 +34,7 @@ export default function App() {
       <Sidebar activeId={activeId} onSelect={setActiveId} />
       <main className="workspace">
         <Topbar dark={dark} onToggleTheme={() => setDark((v) => !v)} onOpenPalette={() => setPaletteOpen(true)} />
-        <div className="content">
+        <div className={"content" + (active.id === "tasks" ? " content-flush" : "")}>
           {active.id === "tasks" ? <TasksModule /> : <ModuleStub module={active} />}
         </div>
       </main>

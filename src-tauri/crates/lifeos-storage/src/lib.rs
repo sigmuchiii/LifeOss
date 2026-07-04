@@ -29,7 +29,46 @@ const MIGRATIONS: &[(&str, &str)] = &[
             completed_at TEXT
         );",
     ),
+    (
+        "0003_tasks_full",
+        "CREATE TABLE IF NOT EXISTS task_lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            position INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            done INTEGER NOT NULL DEFAULT 0,
+            position INTEGER NOT NULL DEFAULT 0
+        );
+        ALTER TABLE tasks ADD COLUMN due_time TEXT;
+        ALTER TABLE tasks ADD COLUMN status TEXT NOT NULL DEFAULT 'not_started';
+        ALTER TABLE tasks ADD COLUMN waiting_for TEXT;
+        ALTER TABLE tasks ADD COLUMN list_id INTEGER;
+        ALTER TABLE tasks ADD COLUMN deleted_at TEXT;",
+    ),
 ];
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Subtask {
+    pub id: i64,
+    pub task_id: i64,
+    pub title: String,
+    pub done: bool,
+    pub position: i64,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskList {
+    pub id: i64,
+    pub name: String,
+    pub position: i64,
+}
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,11 +79,25 @@ pub struct Task {
     pub done: bool,
     pub priority: i64,
     pub due_date: Option<String>,
+    pub due_time: Option<String>,
+    pub status: String,
+    pub waiting_for: Option<String>,
+    pub list_id: Option<i64>,
     pub created_at: String,
     pub completed_at: Option<String>,
+    pub deleted_at: Option<String>,
+    pub subtasks: Vec<Subtask>,
 }
 
-const TASK_COLS: &str = "id, title, notes, done, priority, due_date, created_at, completed_at";
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Snapshot {
+    pub tasks: Vec<Task>,
+    pub lists: Vec<TaskList>,
+}
+
+const TASK_COLS: &str =
+    "id, title, notes, done, priority, due_date, due_time, status, waiting_for, list_id, created_at, completed_at, deleted_at";
 
 fn row_to_task(r: &rusqlite::Row) -> Result<Task, rusqlite::Error> {
     Ok(Task {
@@ -54,8 +107,14 @@ fn row_to_task(r: &rusqlite::Row) -> Result<Task, rusqlite::Error> {
         done: r.get::<_, i64>(3)? != 0,
         priority: r.get(4)?,
         due_date: r.get(5)?,
-        created_at: r.get(6)?,
-        completed_at: r.get(7)?,
+        due_time: r.get(6)?,
+        status: r.get(7)?,
+        waiting_for: r.get(8)?,
+        list_id: r.get(9)?,
+        created_at: r.get(10)?,
+        completed_at: r.get(11)?,
+        deleted_at: r.get(12)?,
+        subtasks: Vec::new(),
     })
 }
 
@@ -96,26 +155,65 @@ impl Storage {
             .query_row("SELECT COUNT(1) FROM schema_migrations", [], |r| r.get(0))
     }
 
-    // ---- Tasks ----
+    // ---- Снимок задач ----
 
-    pub fn tasks_list(&self) -> Result<Vec<Task>, rusqlite::Error> {
-        let sql = format!(
-            "SELECT {TASK_COLS} FROM tasks
-             ORDER BY done ASC, priority DESC, created_at DESC"
-        );
+    pub fn tasks_snapshot(&self) -> Result<Snapshot, rusqlite::Error> {
+        let sql = format!("SELECT {TASK_COLS} FROM tasks");
         let mut stmt = self.conn.prepare(&sql)?;
-        let rows = stmt.query_map([], |r| row_to_task(r))?;
-        rows.collect()
+        let mut tasks: Vec<Task> = stmt
+            .query_map([], |r| row_to_task(r))?
+            .collect::<Result<_, _>>()?;
+
+        let mut stmt = self.conn.prepare(
+            "SELECT id, task_id, title, done, position FROM subtasks ORDER BY position, id",
+        )?;
+        let subs: Vec<Subtask> = stmt
+            .query_map([], |r| {
+                Ok(Subtask {
+                    id: r.get(0)?,
+                    task_id: r.get(1)?,
+                    title: r.get(2)?,
+                    done: r.get::<_, i64>(3)? != 0,
+                    position: r.get(4)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+        for s in subs {
+            if let Some(t) = tasks.iter_mut().find(|t| t.id == s.task_id) {
+                t.subtasks.push(s);
+            }
+        }
+
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, position FROM task_lists ORDER BY position, id")?;
+        let lists: Vec<TaskList> = stmt
+            .query_map([], |r| {
+                Ok(TaskList {
+                    id: r.get(0)?,
+                    name: r.get(1)?,
+                    position: r.get(2)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        Ok(Snapshot { tasks, lists })
     }
 
-    pub fn tasks_add(&self, title: &str, priority: i64) -> Result<Task, rusqlite::Error> {
+    // ---- Задачи ----
+
+    pub fn tasks_add(
+        &self,
+        title: &str,
+        priority: i64,
+        due_date: Option<&str>,
+        list_id: Option<i64>,
+    ) -> Result<i64, rusqlite::Error> {
         self.conn.execute(
-            "INSERT INTO tasks (title, priority) VALUES (?1, ?2)",
-            rusqlite::params![title, priority],
+            "INSERT INTO tasks (title, priority, due_date, list_id) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![title, priority, due_date, list_id],
         )?;
-        let id = self.conn.last_insert_rowid();
-        let sql = format!("SELECT {TASK_COLS} FROM tasks WHERE id = ?1");
-        self.conn.query_row(&sql, [id], |r| row_to_task(r))
+        Ok(self.conn.last_insert_rowid())
     }
 
     pub fn tasks_toggle(&self, id: i64) -> Result<(), rusqlite::Error> {
@@ -129,6 +227,7 @@ impl Storage {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn tasks_update(
         &self,
         id: i64,
@@ -136,16 +235,83 @@ impl Storage {
         notes: &str,
         priority: i64,
         due_date: Option<&str>,
+        due_time: Option<&str>,
+        status: &str,
+        waiting_for: Option<&str>,
+        list_id: Option<i64>,
     ) -> Result<(), rusqlite::Error> {
         self.conn.execute(
-            "UPDATE tasks SET title = ?2, notes = ?3, priority = ?4, due_date = ?5 WHERE id = ?1",
-            rusqlite::params![id, title, notes, priority, due_date],
+            "UPDATE tasks SET title = ?2, notes = ?3, priority = ?4, due_date = ?5,
+                due_time = ?6, status = ?7, waiting_for = ?8, list_id = ?9
+             WHERE id = ?1",
+            rusqlite::params![id, title, notes, priority, due_date, due_time, status, waiting_for, list_id],
         )?;
         Ok(())
     }
 
     pub fn tasks_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
-        self.conn.execute("DELETE FROM tasks WHERE id = ?1", [id])?;
+        self.conn.execute(
+            "UPDATE tasks SET deleted_at = datetime('now') WHERE id = ?1",
+            [id],
+        )?;
+        Ok(())
+    }
+
+    pub fn tasks_restore(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn
+            .execute("UPDATE tasks SET deleted_at = NULL WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    pub fn trash_clear(&self) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "DELETE FROM subtasks WHERE task_id IN (SELECT id FROM tasks WHERE deleted_at IS NOT NULL)",
+            [],
+        )?;
+        self.conn
+            .execute("DELETE FROM tasks WHERE deleted_at IS NOT NULL", [])?;
+        Ok(())
+    }
+
+    // ---- Списки ----
+
+    pub fn lists_add(&self, name: &str) -> Result<i64, rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO task_lists (name, position)
+             VALUES (?1, COALESCE((SELECT MAX(position) + 1 FROM task_lists), 0))",
+            [name],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn lists_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
+        // Задачи списка возвращаются во Входящие
+        self.conn
+            .execute("UPDATE tasks SET list_id = NULL WHERE list_id = ?1", [id])?;
+        self.conn
+            .execute("DELETE FROM task_lists WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    // ---- Подзадачи ----
+
+    pub fn subtasks_add(&self, task_id: i64, title: &str) -> Result<i64, rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO subtasks (task_id, title, position)
+             VALUES (?1, ?2, COALESCE((SELECT MAX(position) + 1 FROM subtasks WHERE task_id = ?1), 0))",
+            rusqlite::params![task_id, title],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn subtasks_toggle(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn
+            .execute("UPDATE subtasks SET done = 1 - done WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    pub fn subtasks_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn.execute("DELETE FROM subtasks WHERE id = ?1", [id])?;
         Ok(())
     }
 }
