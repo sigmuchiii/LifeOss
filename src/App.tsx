@@ -67,7 +67,7 @@ export default function App() {
     <div className="shell">
       <Sidebar activeId={activeId} onSelect={setActiveId} />
       <main className="workspace">
-        <Topbar onOpenPalette={() => setPaletteOpen(true)} />
+        <Topbar />
         <div key={active.id} className={"content" + (active.id === "tasks" ? " content-flush" : "")}>
           {screen}
         </div>

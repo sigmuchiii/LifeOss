@@ -1,17 +1,10 @@
 import { fmtLongDate } from "../lib/dates";
 
-interface Props {
-  onOpenPalette: () => void;
-}
-
-// Переключатель темы убран из топбара — темы выбираются в «Настройках»
-// (решение владельца, 2026-07-04).
-export default function Topbar({ onOpenPalette }: Props) {
+// Строка поиска убрана (решение владельца, 2026-07-04) — палитра осталась на Ctrl+K.
+// В топбаре только дата.
+export default function Topbar() {
   return (
     <header className="topbar">
-      <button className="search" onClick={onOpenPalette}>
-        Поиск… <span className="kbd">Ctrl K</span>
-      </button>
       <span className="topbar-date">{fmtLongDate(new Date())}</span>
     </header>
   );

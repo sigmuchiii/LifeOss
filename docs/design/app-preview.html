@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru" data-theme="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeOss — HTML-превью приложения</title>
+<!--
+  Статичный HTML-вариант приложения LifeOss.
+  ПРАВИЛО: при каждом изменении UI приложения этот файл обновляется в том же
+  коммите и всегда отражает текущее состояние (см. AGENTS.md).
+  Иконки здесь — эмодзи (в приложении — lucide), данные — примерные.
+  Актуально на коммит от 2026-07-04: топбар без поиска, «Сегодня» во всю ширину.
+-->
+<style>
+:root {
+  --bg:#eef1f7; --card:#fff; --soft:#f3f5fa; --text:#1f2430; --mut:#6b7385;
+  --faint:#9aa2b4; --line:#eceff5; --line2:#e1e5ee; --acc:#6c5ce7; --acc2:#a29bfe;
+  --g:#00b894; --r:#e74c6b; --y:#f0932b; --b:#0984e3; --rad:18px; --rad2:14px;
+  --shadow:0 1px 2px rgba(31,36,48,.04),0 8px 24px rgba(31,36,48,.06);
+  --font:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+html[data-theme=dark]{--bg:#13151c;--card:#1c1f29;--soft:#232734;--text:#e8eaf1;--mut:#9aa2b4;--faint:#6b7385;--line:#262a37;--line2:#2e3342;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}
+html[data-theme=midnight]{--bg:#0b1020;--card:#141b31;--soft:#1a2340;--text:#e6ecf7;--mut:#93a1c0;--faint:#5f6d8f;--line:#1d2745;--line2:#273356;--acc:#4ea3ff;--acc2:#7cc0ff}
+html[data-theme=forest]{--bg:#edf4ef;--card:#fff;--soft:#f1f7f3;--text:#1e2b25;--mut:#5f7a6d;--faint:#92a99d;--line:#e6efe9;--line2:#d8e6dd;--acc:#0f9d70;--acc2:#57c9a4}
+html[data-theme=sunset]{--bg:#f7f0ea;--card:#fff;--soft:#faf4ee;--text:#2e2620;--mut:#8a7666;--faint:#b5a494;--line:#f0e7dd;--line2:#e6d9cb;--acc:#e17055;--acc2:#f0a58f}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);font-size:14px;line-height:1.45;color:var(--text);background:var(--bg)}
+.shell{display:grid;grid-template-columns:64px 1fr;height:100vh;overflow:hidden}
+.sidebar{display:flex;flex-direction:column;align-items:center;border-right:1px solid var(--line2);background:var(--card);padding:14px 0;gap:14px}
+.brand{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center}
+.nav{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;overflow-y:auto;scrollbar-width:none}
+.nav-item{width:40px;height:40px;border:0;background:none;border-radius:11px;color:var(--mut);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto}
+.nav-item:hover{background:var(--soft);color:var(--text)}
+.nav-item.active{background:var(--acc);color:#fff}
+.nav-item[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#232734;color:#fff;font-size:12px;padding:5px 10px;border-radius:8px;white-space:nowrap;z-index:5}
+.workspace{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;justify-content:flex-end;align-items:center;padding:10px 30px 0}
+.topbar-date{color:var(--faint);font-size:13px}
+.content{flex:1;overflow-y:auto;padding:30px;animation:fadein .18s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.hidden{display:none}
+.card{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);padding:18px}
+.phead h1{margin:0 0 4px;font-weight:800;font-size:22px}
+.phead-sub{color:var(--mut);margin-bottom:18px}
+.field{border:1px solid var(--line2);border-radius:10px;padding:8px 12px;font:inherit;background:var(--card);color:var(--text);outline:none;width:100%}
+.field:focus{border-color:var(--acc2);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 15%,transparent)}
+/* Сегодня (во всю ширину) */
+.today-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.tstat{display:flex;flex-direction:column;gap:2px;padding:16px 18px}
+.tstat b{font-size:26px;font-weight:800}
+.tstat .ok{color:var(--g)}.tstat .acc{color:var(--acc)}
+.tstat span{color:var(--mut);font-size:13px}
+.sec{margin-bottom:18px}
+.sec h2{margin:0 0 10px;font-size:16px}
+.trow{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--line)}
+.tcheck{width:17px;height:17px;border-radius:6px;border:2px solid var(--faint);background:none;cursor:pointer;flex:0 0 auto}
+.tcheck.p1{border-color:var(--y)}.tcheck.p2{border-color:var(--r)}
+.tcheck.done{background:var(--g);border-color:var(--g)}
+.tdate{margin-left:auto;font-size:12px;color:var(--faint)}
+.tdate.over{color:var(--r)}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.hchip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--card);border-radius:999px;padding:7px 14px;cursor:pointer;font:inherit;color:var(--text)}
+.hchip.done{background:color-mix(in srgb,var(--g) 14%,var(--card));border-color:var(--g);color:var(--g);font-weight:600}
+/* Задачи */
+.tasks{display:flex;height:100%;margin:-30px;min-width:0}
+.tsb{width:216px;flex:0 0 216px;border-right:1px solid var(--line);padding:14px 8px;background:color-mix(in srgb,var(--card) 55%,var(--bg))}
+.tsb-item{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;font:inherit;color:var(--text);padding:7px 10px;border-radius:9px;cursor:pointer;text-align:left}
+.tsb-item.on{background:color-mix(in srgb,var(--acc) 13%,transparent);color:var(--acc);font-weight:600}
+.tsb-item small{margin-left:auto;color:var(--faint)}
+.tlist{flex:1;padding:20px 26px;overflow-y:auto}
+.tlist h1{margin:0 0 14px;font-size:21px;font-weight:800}
+.qa{display:flex;gap:8px;border:1px solid var(--line2);border-radius:12px;background:var(--card);padding:8px 12px;margin-bottom:18px;color:var(--faint)}
+.glabel{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin:14px 0 4px}
+/* Настройки */
+.settings{max-width:860px}
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.thcard{border:2px solid var(--line2);border-radius:var(--rad2);padding:10px;cursor:pointer;background:var(--card);font:inherit;color:var(--text);text-align:center}
+.thcard.on{border-color:var(--acc)}
+.thprev{height:54px;border-radius:9px;margin-bottom:8px;border:1px solid var(--line)}
+/* Фокус */
+.focus{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:20px}
+.ring{width:200px;height:200px;border-radius:50%;border:10px solid var(--soft);border-top-color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;font-family:var(--mono)}
+.presets{display:flex;gap:8px}
+.pbtn{border:1px solid var(--line2);background:var(--card);border-radius:10px;padding:8px 16px;font:inherit;cursor:pointer;color:var(--text)}
+.pbtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* Заметки */
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+/* Календарь */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cald{min-height:74px;border:1px solid var(--line);border-radius:10px;padding:6px;font-size:12px;color:var(--mut)}
+.cald.today{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 7%,var(--card))}
+.calchip{margin-top:4px;background:color-mix(in srgb,var(--acc) 13%,transparent);color:var(--acc);border-radius:6px;padding:1px 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">L</div>
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-scr="today" data-tip="Сегодня">☀️</button>
+      <button class="nav-item" data-scr="tasks" data-tip="Задачи">✅</button>
+      <button class="nav-item" data-scr="habits" data-tip="Привычки">🔁</button>
+      <button class="nav-item" data-scr="calendar" data-tip="Календарь">📅</button>
+      <button class="nav-item" data-scr="focus" data-tip="Фокус">⏱</button>
+      <button class="nav-item" data-scr="qnotes" data-tip="Быстрые заметки">🗒</button>
+      <button class="nav-item" data-tip="Проекты (заглушка)">📁</button>
+      <button class="nav-item" data-tip="Дневник (заглушка)">📔</button>
+      <button class="nav-item" data-tip="Здоровье (заглушка)">💪</button>
+      <button class="nav-item" data-tip="Финансы (заглушка)">💰</button>
+    </nav>
+    <button class="nav-item" data-scr="settings" data-tip="Настройки">⚙️</button>
+  </aside>
+  <main class="workspace">
+    <header class="topbar"><span class="topbar-date" id="date"></span></header>
+
+    <div class="content" id="scr-today">
+      <div class="phead"><h1>Добрый вечер!</h1><div class="phead-sub" id="date2"></div></div>
+      <div class="today-stats">
+        <div class="card tstat"><b>3</b><span>задач на сегодня</span></div>
+        <div class="card tstat"><b class="ok">2</b><span>выполнено сегодня</span></div>
+        <div class="card tstat"><b class="acc">1/2</b><span>привычки</span></div>
+      </div>
+      <section class="card sec">
+        <h2>Задачи</h2>
+        <div class="qa">＋ Добавить задачу на сегодня…</div>
+        <div class="glabel">Просрочено</div>
+        <div class="trow"><button class="tcheck p2"></button>Оплатить счета<span class="tdate over">3 июл</span></div>
+        <div class="glabel">Сегодня</div>
+        <div class="trow"><button class="tcheck p1"></button>Разобрать почту<span class="tdate">18:00</span></div>
+        <div class="trow"><button class="tcheck"></button>Прогулка</div>
+      </section>
+      <section class="card sec">
+        <h2>Привычки на сегодня</h2>
+        <div class="chips">
+          <button class="hchip done">✓ Чтение 30 мин</button>
+          <button class="hchip">○ Зарядка</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="content hidden" id="scr-tasks">
+      <div class="tasks">
+        <div class="tsb">
+          <button class="tsb-item on">☀️ Сегодня <small>3</small></button>
+          <button class="tsb-item">📥 Входящие <small>5</small></button>
+          <button class="tsb-item">📆 Ближайшие 7 дней</button>
+          <div class="glabel" style="padding:0 10px">Списки</div>
+          <button class="tsb-item">🟣 Личное</button>
+          <button class="tsb-item">🟣 Работа</button>
+          <button class="tsb-item">✔ Выполненные</button>
+          <button class="tsb-item">🗑 Корзина</button>
+        </div>
+        <div class="tlist">
+          <h1>Сегодня</h1>
+          <div class="qa">＋ Добавить задачу… &nbsp; 📅</div>
+          <div class="glabel">Просрочено</div>
+          <div class="trow"><button class="tcheck p2"></button>Оплатить счета 🔥<span class="tdate over">3 июл</span></div>
+          <div class="glabel">Сегодня</div>
+          <div class="trow"><button class="tcheck p1"></button>Разобрать почту ⭐<span class="tdate">18:00</span></div>
+          <div class="trow"><button class="tcheck"></button>Прогулка ⚪</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content hidden" id="scr-habits">
+      <div class="phead"><h1>Привычки</h1><div class="phead-sub">Сетка за 14 дней, серия 🔥</div></div>
+      <section class="card sec">
+        <div class="trow"><b>Чтение 30 мин</b><span class="tdate">серия: 6 🔥</span></div>
+        <div class="trow"><b>Зарядка</b><span class="tdate">серия: 2 🔥</span></div>
+        <div class="chips" style="margin-top:10px"><span class="hchip done">✓ вчера</span><span class="hchip done">✓ сегодня</span><span class="hchip">○ завтра</span></div>
+      </section>
+    </div>
+
+    <div class="content hidden" id="scr-calendar">
+      <div class="phead"><h1>Календарь</h1><div class="phead-sub">Июль 2026</div></div>
+      <section class="card">
+        <div class="cal">
+          <div class="cald">1</div><div class="cald">2</div><div class="cald">3<div class="calchip">Оплатить счета</div></div>
+          <div class="cald today">4<div class="calchip">Разобрать почту</div><div class="calchip">Прогулка</div></div>
+          <div class="cald">5</div><div class="cald">6</div><div class="cald">7</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="content hidden" id="scr-focus">
+      <div class="focus">
+        <div class="ring">25:00</div>
+        <div class="presets">
+          <button class="pbtn on">25 мин</button><button class="pbtn">45 мин</button><button class="pbtn">60 мин</button>
+          <button class="pbtn">☕ 5</button><button class="pbtn">☕ 15</button>
+        </div>
+        <section class="card sec" style="width:340px"><h2>Сегодня: 50 мин</h2>
+          <div class="trow">✅ 25 мин<span class="tdate">14:30</span></div>
+          <div class="trow">✅ 25 мин<span class="tdate">16:10</span></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="content hidden" id="scr-qnotes">
+      <div class="phead"><h1>Быстрые заметки</h1><div class="phead-sub">Ctrl+Enter — сохранить, 📌 — закрепить</div></div>
+      <div class="qgrid">
+        <div class="card">📌 Идея: виджет погоды на «Сегодня»</div>
+        <div class="card">Купить: молоко, хлеб</div>
+        <div class="card">Пароль от роутера сменить</div>
+      </div>
+    </div>
+
+    <div class="content hidden" id="scr-settings">
+      <div class="settings">
+        <div class="phead"><h1>Настройки</h1><div class="phead-sub">Тема сохраняется в базе</div></div>
+        <section class="card sec"><h2>Тема</h2>
+          <div class="themes" id="themes">
+            <button class="thcard on" data-th=""><div class="thprev" style="background:linear-gradient(135deg,#eef1f7 60%,#6c5ce7)"></div>Лаванда</button>
+            <button class="thcard" data-th="dark"><div class="thprev" style="background:linear-gradient(135deg,#13151c 60%,#6c5ce7)"></div>Тёмная</button>
+            <button class="thcard" data-th="midnight"><div class="thprev" style="background:linear-gradient(135deg,#0b1020 60%,#4ea3ff)"></div>Полночь</button>
+            <button class="thcard" data-th="forest"><div class="thprev" style="background:linear-gradient(135deg,#edf4ef 60%,#0f9d70)"></div>Лес</button>
+            <button class="thcard" data-th="sunset"><div class="thprev" style="background:linear-gradient(135deg,#f7f0ea 60%,#e17055)"></div>Закат</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const d=new Date(),fmt=d.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"});
+document.getElementById("date").textContent=fmt;document.getElementById("date2").textContent=fmt;
+document.querySelectorAll("[data-scr]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-scr]").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.querySelectorAll(".content").forEach(c=>c.classList.add("hidden"));
+  document.getElementById("scr-"+b.dataset.scr).classList.remove("hidden");
+}));
+document.querySelectorAll("[data-th]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-th]").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  document.documentElement.setAttribute("data-theme",b.dataset.th);
+}));
+</script>
+</body>
+</html>
