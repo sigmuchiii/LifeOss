@@ -23,6 +23,22 @@ fn app_status(state: tauri::State<AppState>) -> Result<serde_json::Value, String
     }))
 }
 
+// ---- Настройки ----
+
+#[tauri::command]
+fn settings_get(state: tauri::State<AppState>, key: String) -> Result<Option<String>, String> {
+    lock(&state)?.setting_get(&key).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn settings_set(state: tauri::State<AppState>, key: String, value: String) -> Result<(), String> {
+    lock(&state)?
+        .setting_set(&key, &value)
+        .map_err(|e| e.to_string())
+}
+
+// ---- Задачи ----
+
 #[tauri::command]
 fn tasks_snapshot(state: tauri::State<AppState>) -> Result<lifeos_storage::Snapshot, String> {
     lock(&state)?.tasks_snapshot().map_err(|e| e.to_string())
@@ -117,6 +133,95 @@ fn subtasks_delete(state: tauri::State<AppState>, id: i64) -> Result<(), String>
     lock(&state)?.subtasks_delete(id).map_err(|e| e.to_string())
 }
 
+// ---- Привычки ----
+
+#[tauri::command]
+fn habits_list(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::Habit>, String> {
+    lock(&state)?.habits_list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn habits_add(state: tauri::State<AppState>, title: String, days: String) -> Result<i64, String> {
+    lock(&state)?
+        .habits_add(&title, &days)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn habits_delete(state: tauri::State<AppState>, id: i64) -> Result<(), String> {
+    lock(&state)?.habits_delete(id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn habit_marks_range(
+    state: tauri::State<AppState>,
+    from: String,
+    to: String,
+) -> Result<Vec<lifeos_storage::HabitMark>, String> {
+    lock(&state)?
+        .habit_marks_range(&from, &to)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn habit_mark_set(
+    state: tauri::State<AppState>,
+    habit_id: i64,
+    date: String,
+    status: String,
+) -> Result<(), String> {
+    lock(&state)?
+        .habit_mark_set(habit_id, &date, &status)
+        .map_err(|e| e.to_string())
+}
+
+// ---- Быстрые заметки ----
+
+#[tauri::command]
+fn qnotes_list(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::QuickNote>, String> {
+    lock(&state)?.qnotes_list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn qnotes_add(state: tauri::State<AppState>, content: String) -> Result<i64, String> {
+    lock(&state)?.qnotes_add(&content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn qnotes_update(
+    state: tauri::State<AppState>,
+    id: i64,
+    content: String,
+    pinned: bool,
+) -> Result<(), String> {
+    lock(&state)?
+        .qnotes_update(id, &content, pinned)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn qnotes_delete(state: tauri::State<AppState>, id: i64) -> Result<(), String> {
+    lock(&state)?.qnotes_delete(id).map_err(|e| e.to_string())
+}
+
+// ---- Фокус ----
+
+#[tauri::command]
+fn focus_add(
+    state: tauri::State<AppState>,
+    minutes: i64,
+    label: Option<String>,
+) -> Result<i64, String> {
+    lock(&state)?
+        .focus_add(minutes, label.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn focus_today(state: tauri::State<AppState>) -> Result<Vec<lifeos_storage::FocusSession>, String> {
+    lock(&state)?.focus_today().map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -130,6 +235,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             app_status,
+            settings_get,
+            settings_set,
             tasks_snapshot,
             tasks_add,
             tasks_toggle,
@@ -141,7 +248,18 @@ fn main() {
             lists_delete,
             subtasks_add,
             subtasks_toggle,
-            subtasks_delete
+            subtasks_delete,
+            habits_list,
+            habits_add,
+            habits_delete,
+            habit_marks_range,
+            habit_mark_set,
+            qnotes_list,
+            qnotes_add,
+            qnotes_update,
+            qnotes_delete,
+            focus_add,
+            focus_today
         ])
         .run(tauri::generate_context!())
         .expect("error while running LifeOss");

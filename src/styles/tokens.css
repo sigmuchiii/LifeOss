@@ -1,4 +1,5 @@
-/* Дизайн-токены LifeOss — источник: docs/design/bento-design.html (Bento v3) */
+/* Дизайн-токены LifeOss — источник: docs/design/bento-design.html (Bento v3).
+   Темы переключаются в «Настройках» через html[data-theme]. */
 :root {
   --bg: #eef1f7;
   --card: #ffffff;
@@ -23,7 +24,8 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-html.dark {
+/* Тёмная (фиолетовый акцент Bento) */
+html[data-theme="dark"] {
   --bg: #13151c;
   --card: #1c1f29;
   --soft: #232734;
@@ -34,4 +36,48 @@ html.dark {
   --line2: #2e3342;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Полночь — глубокий синий, холодный акцент */
+html[data-theme="midnight"] {
+  --bg: #0b1020;
+  --card: #141b31;
+  --soft: #1a2340;
+  --text: #e6ecf7;
+  --mut: #93a1c0;
+  --faint: #5f6d8f;
+  --line: #1d2745;
+  --line2: #273356;
+  --acc: #4ea3ff;
+  --acc2: #7cc0ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow2: 0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Лес — светлая, зелёный акцент */
+html[data-theme="forest"] {
+  --bg: #edf4ef;
+  --card: #ffffff;
+  --soft: #f1f7f3;
+  --text: #1e2b25;
+  --mut: #5f7a6d;
+  --faint: #92a99d;
+  --line: #e6efe9;
+  --line2: #d8e6dd;
+  --acc: #0f9d70;
+  --acc2: #57c9a4;
+}
+
+/* Закат — тёплая светлая, коралловый акцент */
+html[data-theme="sunset"] {
+  --bg: #f7f0ea;
+  --card: #ffffff;
+  --soft: #faf4ee;
+  --text: #2e2620;
+  --mut: #8a7666;
+  --faint: #b5a494;
+  --line: #f0e7dd;
+  --line2: #e6d9cb;
+  --acc: #e17055;
+  --acc2: #f0a58f;
 }

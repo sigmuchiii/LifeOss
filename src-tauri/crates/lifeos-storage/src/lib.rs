@@ -1,6 +1,6 @@
 //! Хранилище LifeOss: SQLite (WAL) + простая система миграций.
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
 pub struct Storage {
@@ -50,6 +50,36 @@ const MIGRATIONS: &[(&str, &str)] = &[
         ALTER TABLE tasks ADD COLUMN list_id INTEGER;
         ALTER TABLE tasks ADD COLUMN deleted_at TEXT;",
     ),
+    (
+        "0004_habits_notes_focus",
+        "CREATE TABLE IF NOT EXISTS habits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            days TEXT NOT NULL DEFAULT '1111111',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            archived_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS habit_marks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            habit_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            status TEXT NOT NULL,
+            UNIQUE(habit_id, date)
+        );
+        CREATE TABLE IF NOT EXISTS quick_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            pinned INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS focus_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            minutes INTEGER NOT NULL,
+            label TEXT,
+            ended_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );",
+    ),
 ];
 
 #[derive(serde::Serialize)]
@@ -94,6 +124,41 @@ pub struct Task {
 pub struct Snapshot {
     pub tasks: Vec<Task>,
     pub lists: Vec<TaskList>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Habit {
+    pub id: i64,
+    pub title: String,
+    pub days: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitMark {
+    pub habit_id: i64,
+    pub date: String,
+    pub status: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickNote {
+    pub id: i64,
+    pub content: String,
+    pub pinned: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FocusSession {
+    pub id: i64,
+    pub minutes: i64,
+    pub label: Option<String>,
+    pub ended_at: String,
 }
 
 const TASK_COLS: &str =
@@ -153,6 +218,25 @@ impl Storage {
     pub fn schema_version(&self) -> Result<i64, rusqlite::Error> {
         self.conn
             .query_row("SELECT COUNT(1) FROM schema_migrations", [], |r| r.get(0))
+    }
+
+    // ---- Настройки ----
+
+    pub fn setting_get(&self, key: &str) -> Result<Option<String>, rusqlite::Error> {
+        self.conn
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+                r.get(0)
+            })
+            .optional()
+    }
+
+    pub fn setting_set(&self, key: &str, value: &str) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [key, value],
+        )?;
+        Ok(())
     }
 
     // ---- Снимок задач ----
@@ -220,7 +304,7 @@ impl Storage {
         self.conn.execute(
             "UPDATE tasks SET
                 done = 1 - done,
-                completed_at = CASE WHEN done = 0 THEN datetime('now') ELSE NULL END
+                completed_at = CASE WHEN done = 0 THEN datetime('now', 'localtime') ELSE NULL END
              WHERE id = ?1",
             [id],
         )?;
@@ -285,7 +369,6 @@ impl Storage {
     }
 
     pub fn lists_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
-        // Задачи списка возвращаются во Входящие
         self.conn
             .execute("UPDATE tasks SET list_id = NULL WHERE list_id = ?1", [id])?;
         self.conn
@@ -313,5 +396,146 @@ impl Storage {
     pub fn subtasks_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
         self.conn.execute("DELETE FROM subtasks WHERE id = ?1", [id])?;
         Ok(())
+    }
+
+    // ---- Привычки ----
+
+    pub fn habits_list(&self) -> Result<Vec<Habit>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, title, days FROM habits WHERE archived_at IS NULL ORDER BY id",
+        )?;
+        stmt.query_map([], |r| {
+            Ok(Habit {
+                id: r.get(0)?,
+                title: r.get(1)?,
+                days: r.get(2)?,
+            })
+        })?
+        .collect()
+    }
+
+    pub fn habits_add(&self, title: &str, days: &str) -> Result<i64, rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO habits (title, days) VALUES (?1, ?2)",
+            [title, days],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn habits_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn
+            .execute("DELETE FROM habit_marks WHERE habit_id = ?1", [id])?;
+        self.conn.execute("DELETE FROM habits WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    pub fn habit_marks_range(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<HabitMark>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT habit_id, date, status FROM habit_marks WHERE date >= ?1 AND date <= ?2",
+        )?;
+        stmt.query_map([from, to], |r| {
+            Ok(HabitMark {
+                habit_id: r.get(0)?,
+                date: r.get(1)?,
+                status: r.get(2)?,
+            })
+        })?
+        .collect()
+    }
+
+    pub fn habit_mark_set(
+        &self,
+        habit_id: i64,
+        date: &str,
+        status: &str,
+    ) -> Result<(), rusqlite::Error> {
+        if status.is_empty() {
+            self.conn.execute(
+                "DELETE FROM habit_marks WHERE habit_id = ?1 AND date = ?2",
+                rusqlite::params![habit_id, date],
+            )?;
+        } else {
+            self.conn.execute(
+                "INSERT INTO habit_marks (habit_id, date, status) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(habit_id, date) DO UPDATE SET status = excluded.status",
+                rusqlite::params![habit_id, date, status],
+            )?;
+        }
+        Ok(())
+    }
+
+    // ---- Быстрые заметки ----
+
+    pub fn qnotes_list(&self) -> Result<Vec<QuickNote>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, pinned, created_at, updated_at FROM quick_notes
+             ORDER BY pinned DESC, id DESC",
+        )?;
+        stmt.query_map([], |r| {
+            Ok(QuickNote {
+                id: r.get(0)?,
+                content: r.get(1)?,
+                pinned: r.get::<_, i64>(2)? != 0,
+                created_at: r.get(3)?,
+                updated_at: r.get(4)?,
+            })
+        })?
+        .collect()
+    }
+
+    pub fn qnotes_add(&self, content: &str) -> Result<i64, rusqlite::Error> {
+        self.conn
+            .execute("INSERT INTO quick_notes (content) VALUES (?1)", [content])?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn qnotes_update(
+        &self,
+        id: i64,
+        content: &str,
+        pinned: bool,
+    ) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "UPDATE quick_notes SET content = ?2, pinned = ?3, updated_at = datetime('now')
+             WHERE id = ?1",
+            rusqlite::params![id, content, pinned as i64],
+        )?;
+        Ok(())
+    }
+
+    pub fn qnotes_delete(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn
+            .execute("DELETE FROM quick_notes WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    // ---- Фокус ----
+
+    pub fn focus_add(&self, minutes: i64, label: Option<&str>) -> Result<i64, rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO focus_sessions (minutes, label) VALUES (?1, ?2)",
+            rusqlite::params![minutes, label],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn focus_today(&self) -> Result<Vec<FocusSession>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, minutes, label, ended_at FROM focus_sessions
+             WHERE date(ended_at) = date('now', 'localtime') ORDER BY id DESC",
+        )?;
+        stmt.query_map([], |r| {
+            Ok(FocusSession {
+                id: r.get(0)?,
+                minutes: r.get(1)?,
+                label: r.get(2)?,
+                ended_at: r.get(3)?,
+            })
+        })?
+        .collect()
     }
 }

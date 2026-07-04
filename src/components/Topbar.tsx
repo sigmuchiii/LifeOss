@@ -1,20 +1,18 @@
+import { fmtLongDate } from "../lib/dates";
+
 interface Props {
-  dark: boolean;
-  onToggleTheme: () => void;
   onOpenPalette: () => void;
 }
 
-export default function Topbar({ dark, onToggleTheme, onOpenPalette }: Props) {
+// Переключатель темы убран из топбара — темы выбираются в «Настройках»
+// (решение владельца, 2026-07-04).
+export default function Topbar({ onOpenPalette }: Props) {
   return (
     <header className="topbar">
       <button className="search" onClick={onOpenPalette}>
         Поиск… <span className="kbd">Ctrl K</span>
       </button>
-      <div className="topbar-actions">
-        <button className="icon-btn" title="Переключить тему" onClick={onToggleTheme}>
-          {dark ? "🌙" : "☀️"}
-        </button>
-      </div>
+      <span className="topbar-date">{fmtLongDate(new Date())}</span>
     </header>
   );
 }

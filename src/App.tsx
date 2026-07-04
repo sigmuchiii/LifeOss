@@ -1,19 +1,40 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import CommandPalette from "./components/CommandPalette";
 import ModuleStub from "./modules/ModuleStub";
 import TasksModule from "./modules/TasksModule";
+import TodayModule from "./modules/TodayModule";
+import HabitsModule from "./modules/HabitsModule";
+import CalendarModule from "./modules/CalendarModule";
+import FocusModule from "./modules/FocusModule";
+import QuickNotesModule from "./modules/QuickNotesModule";
+import SettingsModule from "./modules/SettingsModule";
 import { moduleRegistry } from "./moduleRegistry";
+import { applyTheme, DEFAULT_THEME } from "./themes";
+
+const K_THEME = "lifeoss.theme";
 
 export default function App() {
   const [activeId, setActiveId] = useState("today");
-  const [dark, setDark] = useState(false);
+  const [theme, setThemeState] = useState(() => localStorage.getItem(K_THEME) ?? DEFAULT_THEME);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  useEffect(() => applyTheme(theme), [theme]);
+
+  // Тема хранится в базе (settings), localStorage — быстрый кэш до ответа бэкенда.
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+    invoke<string | null>("settings_get", { key: "theme" })
+      .then((v) => { if (v) setThemeState(v); })
+      .catch(() => { /* браузерный режим без Tauri */ });
+  }, []);
+
+  const setTheme = (id: string) => {
+    setThemeState(id);
+    localStorage.setItem(K_THEME, id);
+    invoke("settings_set", { key: "theme", value: id }).catch(() => {});
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -29,13 +50,26 @@ export default function App() {
 
   const active = moduleRegistry.find((m) => m.id === activeId) ?? moduleRegistry[0];
 
+  const screen = (() => {
+    switch (active.id) {
+      case "today": return <TodayModule onOpenTasks={() => setActiveId("tasks")} />;
+      case "tasks": return <TasksModule />;
+      case "habits": return <HabitsModule />;
+      case "calendar": return <CalendarModule />;
+      case "focus": return <FocusModule />;
+      case "quickNotes": return <QuickNotesModule />;
+      case "settings": return <SettingsModule theme={theme} onSetTheme={setTheme} />;
+      default: return <ModuleStub module={active} />;
+    }
+  })();
+
   return (
     <div className="shell">
       <Sidebar activeId={activeId} onSelect={setActiveId} />
       <main className="workspace">
-        <Topbar dark={dark} onToggleTheme={() => setDark((v) => !v)} onOpenPalette={() => setPaletteOpen(true)} />
-        <div className={"content" + (active.id === "tasks" ? " content-flush" : "")}>
-          {active.id === "tasks" ? <TasksModule /> : <ModuleStub module={active} />}
+        <Topbar onOpenPalette={() => setPaletteOpen(true)} />
+        <div key={active.id} className={"content" + (active.id === "tasks" ? " content-flush" : "")}>
+          {screen}
         </div>
       </main>
       {paletteOpen && (
